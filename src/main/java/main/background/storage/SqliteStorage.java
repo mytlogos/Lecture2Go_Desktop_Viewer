@@ -1,7 +1,10 @@
 package main.background.storage;
 
 import main.Util;
+import main.background.IndexInfo;
+import main.model.Faculty;
 import main.model.QueryItem;
+import main.model.Section;
 import main.model.Video;
 
 import java.io.File;
@@ -16,20 +19,26 @@ import java.util.function.BiFunction;
  */
 final class SqliteStorage extends Storage {
     private static final String name = "lec2goViewer";
+    private static final String imageName = "lec2goViewerImages";
     private static final String workDir = System.getProperty("user.dir") + File.separator;
     private static final String location = workDir;
     private final SqliteConManager conManager;
+    private final SqliteConManager imageConManager;
     private final Map<String, String> tables = new HashMap<>();
+    private Map<String, String> imageTables = new HashMap<>();
 
-    public SqliteStorage() {
+    SqliteStorage() {
         this.conManager = new SqliteConManager(SqliteStorage.name, SqliteStorage.location);
+        this.imageConManager = new SqliteConManager(SqliteStorage.imageName, SqliteStorage.location);
         this.init();
     }
 
     private void init() {
 
         this.tables.put("query_item", "key VARCHAR(255) NOT NULL, id INT NOT NULL, name VARCHAR(500) NOT NULL, PRIMARY KEY(id, key)");
-        this.tables.put("cover", "id INT NOT NULL, image BLOB NOT NULL, PRIMARY KEY(id)");
+        this.tables.put("section", "parent_id INT NOT NULL, id INT NOT NULL, name VARCHAR(500) NOT NULL, PRIMARY KEY(id), FOREIGN KEY(parent_id) REFERENCES query_item(id)");
+        this.imageTables.put("cover", "id INT NOT NULL, image BLOB NOT NULL, PRIMARY KEY(id)");
+        this.imageTables.put("index_info", "page INT NOT NULL, limit INT NOT NULL, last_indexed VARCHAR(255) NOT NULL, item_count INT NOT NULL, PRIMARY KEY(page)");
         // todo make an additional column for updates date, so that videos that never 'changed' or were never 'inserted' anymore are checked and then maybe deleted
         this.tables.put("video", "cover VARCHAR(255) NOT NULL, id INT NOT NULL, name VARCHAR(700) NOT NULL, semester VARCHAR(500), published VARCHAR(500), PRIMARY KEY(id)");
         this.tables.put("dozent", "id INT NOT NULL, name VARCHAR(700) NOT NULL, PRIMARY KEY(id, name), FOREIGN KEY (id) REFERENCES video(id)");
@@ -41,13 +50,28 @@ final class SqliteStorage extends Storage {
     public void check() {
         this.conManager.getConAuto(connection -> {
             for (Map.Entry<String, String> entry : this.tables.entrySet()) {
-                if (!this.tableExists(connection, entry.getKey())) {
+                if (this.tableDoesNotExist(connection, entry.getKey())) {
                     try (Statement statement = connection.createStatement()) {
                         statement.execute("CREATE TABLE IF NOT EXISTS " + entry.getKey() + " (" + entry.getValue() + ")");
                     }
                 }
             }
         });
+        this.imageConManager.getConAuto(connection -> {
+            for (Map.Entry<String, String> entry : this.imageTables.entrySet()) {
+                if (this.tableDoesNotExist(connection, entry.getKey())) {
+                    try (Statement statement = connection.createStatement()) {
+                        statement.execute("CREATE TABLE IF NOT EXISTS " + entry.getKey() + " (" + entry.getValue() + ")");
+                    }
+                }
+            }
+        });
+    }
+
+
+    @Override
+    FacultyHelper createFacultyHelper() {
+        return new SqliteFacultyHelper(this.conManager);
     }
 
     @Override
@@ -57,7 +81,7 @@ final class SqliteStorage extends Storage {
 
     @Override
     public void saveCover(byte[] bytes, Video video) {
-        this.conManager.getConAuto(connection -> {
+        this.imageConManager.getConAuto(connection -> {
             try (PreparedStatement statement = connection.prepareStatement("INSERT OR IGNORE INTO cover VALUES(?,?)")) {
                 statement.setInt(1, video.getId());
                 statement.setBytes(2, bytes);
@@ -68,7 +92,7 @@ final class SqliteStorage extends Storage {
 
     @Override
     public InputStream loadCover(Video video) {
-        return this.conManager.getConnection(connection -> {
+        return this.imageConManager.getConnection(connection -> {
             try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM cover WHERE id=?;")) {
                 statement.setInt(1, video.getId());
                 try (ResultSet query = statement.executeQuery()) {
@@ -170,6 +194,9 @@ final class SqliteStorage extends Storage {
 
     @Override
     public void addVideos(Collection<Video> videos) {
+        if (videos.isEmpty()) {
+            return;
+        }
         this.conManager.getConAuto(connection -> {
             try (PreparedStatement statement = connection.prepareStatement("INSERT OR IGNORE INTO video VALUES (?,?,?,?,?)")) {
                 for (Video video : videos) {
@@ -225,8 +252,11 @@ final class SqliteStorage extends Storage {
 
     @Override
     public void updateVideos(Collection<Video> videos) {
+        if (videos.isEmpty()) {
+            return;
+        }
         this.conManager.getConAuto(connection -> {
-            try (PreparedStatement statement = connection.prepareStatement("UPDATE video SET cover=?, name=?, semester=?, published=? WHERE id=?")) {
+           /* try (PreparedStatement statement = connection.prepareStatement("UPDATE video SET cover=?, name=?, semester=?, published=? WHERE id=?")) {
                 for (Video video : videos) {
                     statement.setString(1, video.getCover());
                     statement.setString(2, video.getName());
@@ -236,7 +266,7 @@ final class SqliteStorage extends Storage {
                     statement.addBatch();
                 }
                 statement.executeBatch();
-            }
+            }*/
 
             try (PreparedStatement statement = connection.prepareStatement("INSERT OR IGNORE INTO video_video VALUES(?,?)")) {
                 for (Video video : videos) {
@@ -292,6 +322,58 @@ final class SqliteStorage extends Storage {
         });
     }
 
+    @Override
+    public List<IndexInfo> getIndexInfos() {
+        return this.conManager.getConnectionAuto(connection -> {
+            List<IndexInfo> indexInfos = new ArrayList<>();
+            try (Statement statement = connection.createStatement()) {
+                try (ResultSet query = statement.executeQuery("SELECT * FROM index_info;")) {
+                    while (query.next()) {
+                        final int page = query.getInt(1);
+                        final int limit = query.getInt(2);
+                        final String lastIndexedString = query.getString(3);
+                        final int itemCount = query.getInt(4);
+
+                        indexInfos.add(new IndexInfo(page, limit, Util.parseLocalDateTime(lastIndexedString), itemCount, ""));
+                    }
+                }
+            }
+            return indexInfos;
+        });
+    }
+
+    @Override
+    public void addIndexInfos(List<IndexInfo> infos) {
+        this.conManager.getConAuto(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement("INSERT OR IGNORE INTO index_info VALUES(?,?,?,?)")) {
+                for (IndexInfo info : infos) {
+                    statement.setInt(1, info.getPage());
+                    statement.setInt(2, info.getLimit());
+                    statement.setString(3, Util.formatLocalDateTime(info.getLastIndexed()));
+                    statement.setInt(4, info.getItemCount());
+                    statement.addBatch();
+                }
+                statement.executeBatch();
+            }
+        });
+    }
+
+    @Override
+    public void updateIndexInfos(List<IndexInfo> infos) {
+        this.conManager.getConAuto(connection -> {
+            try (PreparedStatement statement = connection.prepareStatement("UPDATE index_info SET limit=?, last_indexed=?, item_count=? WHERE page=?;")) {
+                for (IndexInfo info : infos) {
+                    statement.setInt(1, info.getLimit());
+                    statement.setString(2, Util.formatLocalDateTime(info.getLastIndexed()));
+                    statement.setInt(3, info.getItemCount());
+                    statement.setInt(4, info.getPage());
+                    statement.addBatch();
+                }
+                statement.executeBatch();
+            }
+        });
+    }
+
     /**
      * Checks if the specified table of the class exists already.
      * Uses the given Connection.
@@ -300,7 +382,7 @@ final class SqliteStorage extends Storage {
      * @return true if the table exists
      * @throws SQLException if there was an error while checking with the database
      */
-    private boolean tableExists(Connection connection, String table) throws SQLException {
+    private boolean tableDoesNotExist(Connection connection, String table) throws SQLException {
         DatabaseMetaData meta = connection.getMetaData();
         boolean exists;
 
@@ -309,11 +391,13 @@ final class SqliteStorage extends Storage {
             while (res.next()) {
                 if (table.equalsIgnoreCase(res.getString("TABLE_NAME"))) {
                     exists = true;
+                    break;
                 }
             }
         }
-        return exists;
+        return !exists;
     }
+
 
     /**
      *
@@ -327,26 +411,37 @@ final class SqliteStorage extends Storage {
         }
 
         @Override
-        public void add(T item) {
+        public void add(Collection<T> items) {
+            if (items.isEmpty()) {
+                return;
+            }
             this.conManager.getConAuto(connection -> {
-                try (PreparedStatement statement = connection.prepareStatement("INSERT OR IGNORE INTO query_item VALUES (?,?,?)")) {
-                    statement.setString(1, this.key);
-                    statement.setInt(2, item.getId());
-                    statement.setString(3, item.getName());
-                    statement.execute();
+                for (T item : items) {
+                    this.add(item, connection);
+                }
+            });
+        }
+
+        @Override
+        public void add(T item) {
+            this.conManager.getConAuto(connection -> add(item, connection));
+        }
+
+        @Override
+        public void delete(Collection<T> items) {
+            if (items.isEmpty()) {
+                return;
+            }
+            this.conManager.getConAuto(connection -> {
+                for (T item : items) {
+                    this.delete(item, connection);
                 }
             });
         }
 
         @Override
         public void delete(T item) {
-            this.conManager.getConAuto(connection -> {
-                try (PreparedStatement statement = connection.prepareStatement("DELETE FROM query_item WHERE id=? AND key=?")) {
-                    statement.setInt(1, item.getId());
-                    statement.setString(2, this.key);
-                    statement.execute();
-                }
-            });
+            this.conManager.getConAuto(connection -> delete(item, connection));
         }
 
         @Override
@@ -373,5 +468,127 @@ final class SqliteStorage extends Storage {
             });
         }
 
+        private void delete(T item, Connection connection) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement("DELETE FROM query_item WHERE id=? AND key=?")) {
+                statement.setInt(1, item.getId());
+                statement.setString(2, this.key);
+                statement.execute();
+            }
+        }
+
+        private void add(T item, Connection connection) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement("INSERT OR IGNORE INTO query_item VALUES (?,?,?)")) {
+                statement.setString(1, this.key);
+                statement.setInt(2, item.getId());
+                statement.setString(3, item.getName());
+                statement.execute();
+            }
+        }
+
     }
+
+    private static class SqliteFacultyHelper extends FacultyHelper {
+        private final SqliteConManager conManager;
+
+        SqliteFacultyHelper(SqliteConManager conManager) {
+            this.conManager = conManager;
+        }
+
+        @Override
+        public void add(Collection<Faculty> items) {
+            if (items.isEmpty()) {
+                return;
+            }
+            this.conManager.getCon(connection -> {
+                for (Faculty item : items) {
+                    this.add(item, connection);
+                }
+                connection.commit();
+            });
+        }
+
+        @Override
+        public void add(Faculty item) {
+            this.conManager.getConAuto(connection -> add(item, connection));
+        }
+
+        @Override
+        public void delete(Collection<Faculty> items) {
+            if (items.isEmpty()) {
+                return;
+            }
+            this.conManager.getCon(connection -> {
+                for (Faculty item : items) {
+                    this.delete(item, connection);
+                }
+                connection.commit();
+            });
+        }
+
+        @Override
+        public void delete(Faculty item) {
+            this.conManager.getConAuto(connection -> delete(item, connection));
+        }
+
+        @Override
+        public List<Faculty> getAll() {
+            return this.conManager.getConnection(connection -> {
+                List<Faculty> list = new ArrayList<>();
+                Map<Integer, Faculty> map = new HashMap<>();
+
+                try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM query_item WHERE key=?;")) {
+                    statement.setString(1, this.key);
+
+                    try (ResultSet query = statement.executeQuery()) {
+                        while (query.next()) {
+                            final int id = query.getInt(2);
+                            final String name = query.getString(3);
+
+                            final Faculty t = new Faculty(id, name);
+                            map.put(id, t);
+                            list.add(t);
+                        }
+                    }
+                }
+                try (PreparedStatement statement = connection.prepareStatement("SELECT * FROM section;")) {
+                    try (ResultSet query = statement.executeQuery()) {
+                        while (query.next()) {
+                            final int parentId = query.getInt(1);
+                            final int id = query.getInt(2);
+                            final String name = query.getString(3);
+
+                            final Section t = new Section(id, name);
+                            final Faculty faculty = map.get(parentId);
+
+                            if (faculty == null) {
+                                System.out.println("loose section: " + id);
+                                continue;
+                            }
+                            faculty.addSection(t);
+                        }
+                    }
+                }
+                return list;
+            });
+        }
+
+        private void delete(Faculty item, Connection connection) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement("DELETE FROM query_item WHERE id=? AND key=?")) {
+                statement.setInt(1, item.getId());
+                statement.setString(2, this.key);
+                statement.execute();
+            }
+        }
+
+        private void add(Faculty item, Connection connection) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement("INSERT OR IGNORE INTO query_item VALUES (?,?,?)")) {
+                statement.setString(1, this.key);
+                statement.setInt(2, item.getId());
+                statement.setString(3, item.getName());
+                statement.execute();
+            }
+        }
+
+    }
+
 }

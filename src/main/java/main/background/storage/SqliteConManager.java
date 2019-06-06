@@ -1,7 +1,8 @@
 package main.background.storage;
 
+import com.zaxxer.hikari.HikariDataSource;
+
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,10 +22,13 @@ import java.util.logging.Logger;
 final class SqliteConManager {
     private static Logger logger = Register.LOGGER;
     private final String database;
-    private Connection connection = null;
+    private final HikariDataSource hikariSource;
 
     SqliteConManager(String name, String location) {
-        database = location + "\\" + name + ".db";
+        this.database = "jdbc:sqlite:" + location + "\\" + name + ".db";
+        this.hikariSource = new HikariDataSource();
+        this.hikariSource.setJdbcUrl(database);
+//        this.hikariSource.setDataSourceClassName("org.sqlite.SQLiteDataSource");
     }
 
     /**
@@ -54,7 +58,9 @@ final class SqliteConManager {
      * @throws SQLException if DriverManager could not getGorgon connection
      */
     Connection connection() throws SQLException {
-        return DriverManager.getConnection("jdbc:sqlite:" + database);
+        System.out.println(String.format("connecting on %s", Thread.currentThread().getName()));
+        return this.hikariSource.getConnection();
+//        return DriverManager.getConnection(this.database);
 //        if (connection == null || connection.isClosed()) {
 //            connection = DriverManager.getConnection("jdbc:sqlite:" + database);
 //        }

@@ -46,8 +46,7 @@ public class GodData {
     }
 
     public void addSection(Collection<Section> items) {
-        items.removeIf(item -> !this.addSection(item));
-        Storage.getDatabase().getSectionHelper().add(items);
+        items.forEach(this::addSection);
     }
 
     public boolean addSection(Section section) {
@@ -63,16 +62,6 @@ public class GodData {
             return true;
         }
         return false;
-    }
-
-    public void removeSection(Collection<Section> items) {
-        for (Section item : items) {
-            this.removeSection(item);
-        }
-    }
-
-    public void removeSection(Section section) {
-        sections.remove(section);
     }
 
     public void addFaculty(Collection<Faculty> items) {
@@ -91,7 +80,19 @@ public class GodData {
     }
 
     public void removeFaculty(Faculty faculty) {
-        faculties.remove(faculty);
+        if (faculties.remove(faculty)) {
+            this.removeSection(faculty.getSections());
+        }
+    }
+
+    public void removeSection(Collection<Section> items) {
+        for (Section item : items) {
+            this.removeSection(item);
+        }
+    }
+
+    public void removeSection(Section section) {
+        sections.remove(section);
     }
 
     public void addCategory(Collection<Category> items) {

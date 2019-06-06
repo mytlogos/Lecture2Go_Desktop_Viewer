@@ -45,26 +45,26 @@
         </ToolBar>
         <HBox prefHeight="100.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
             <children>
-                <VBox prefHeight="200.0" prefWidth="100.0" spacing="5.0">
+                <VBox spacing="5.0">
                     <children>
-                        <TitledPane animated="false" text="Fakultät/Einrichtung">
+                        <TitledPane animated="false" text="Fakultät/Einrichtung" VBox.vgrow="ALWAYS">
                             <content>
-                                <ListView fx:id="facultyList" prefHeight="200.0" prefWidth="200.0" />
+                                <ListView fx:id="facultyList" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" />
                             </content>
                         </TitledPane>
-                        <TitledPane animated="false" layoutX="10.0" layoutY="10.0" text="Bereich">
+                        <TitledPane animated="false" layoutX="10.0" layoutY="10.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" text="Bereich" VBox.vgrow="ALWAYS">
                             <content>
-                                <ListView fx:id="sectionList" prefHeight="200.0" prefWidth="200.0" />
+                                <ListView fx:id="sectionList" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" />
                             </content>
                         </TitledPane>
-                        <TitledPane animated="false" layoutX="10.0" layoutY="60.0" text="Semester">
+                        <TitledPane animated="false" layoutX="10.0" layoutY="60.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" text="Semester" VBox.vgrow="ALWAYS">
                             <content>
-                                <ListView fx:id="semesterList" prefHeight="200.0" prefWidth="200.0" />
+                                <ListView fx:id="semesterList" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" />
                             </content>
                         </TitledPane>
-                        <TitledPane animated="false" layoutX="10.0" layoutY="76.0" text="Kategorie">
+                        <TitledPane animated="false" layoutX="10.0" layoutY="76.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" text="Kategorie" VBox.vgrow="ALWAYS">
                             <content>
-                                <ListView fx:id="categoryList" prefHeight="200.0" prefWidth="200.0" />
+                                <ListView fx:id="categoryList" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" />
                             </content>
                         </TitledPane>
                     </children>
@@ -86,6 +86,9 @@
          <padding>
             <Insets right="5.0" />
          </padding>
+         <VBox.margin>
+            <Insets bottom="5.0" />
+         </VBox.margin>
       </HBox>
     </children>
 </VBox>

@@ -19,9 +19,14 @@ import retrofit2.Response;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 import java.util.function.Predicate;
 
 public class Controller {
+    private Executor executor = Executors.newFixedThreadPool(5);
+
     @FXML
     private Button downloadBtn;
     @FXML
@@ -42,6 +47,7 @@ public class Controller {
     private TaskMessenger taskMessenger;
 
     public void initialize() {
+        this.progressBar.setProgress(0);
         this.taskMessenger = new TaskMessenger(this.taskMessage.textProperty(), this.progressBar.progressProperty());
 
         final StartupService service = new StartupService();
@@ -50,6 +56,7 @@ public class Controller {
         this.taskMessenger.registerWorker(service);
         this.taskMessenger.registerWorker(indexer);
 
+        indexer.setOnFailed(event -> event.getSource().getException().printStackTrace());
         service.start();
         indexer.start();
 
@@ -57,8 +64,6 @@ public class Controller {
         this.sectionList.setItems(GodData.get().getSections());
         this.semesterList.setItems(GodData.get().getSemesters());
         this.categoryList.setItems(GodData.get().getCategories());
-
-        runSelectedQuery();
 
         this.facultyList.setCellFactory(param -> new QueryItemCell<>());
         this.sectionList.setCellFactory(param -> new QueryItemCell<>());
@@ -68,30 +73,35 @@ public class Controller {
         this.videoList.setShowRoot(false);
 
         final FilteredList<Video> filtered = GodData.get().getVideos().filtered(null);
-        final InvalidationListener listener = observable -> filtered.setPredicate(this.getPredicate());
+        final InvalidationListener listener = observable -> {
+            filtered.setPredicate(this.getPredicate());
+            runSelectedQuery();
+        };
 
         this.facultyList.getSelectionModel().selectedItemProperty().addListener(listener);
         this.sectionList.getSelectionModel().selectedItemProperty().addListener(listener);
         this.semesterList.getSelectionModel().selectedItemProperty().addListener(listener);
         this.categoryList.getSelectionModel().selectedItemProperty().addListener(listener);
 
-        final PauseTransition pause = new PauseTransition(Duration.seconds(1));
+        final PauseTransition pause = new PauseTransition(Duration.seconds(0.5));
 
         filtered.addListener((ListChangeListener<? super Video>) observable -> {
             if (observable.next()) {
-                pause.setOnFinished(event -> runSelectedQuery());
+                pause.setOnFinished(event -> {
+                    final TreeItem<Video> root = this.convertToTreeItems(filtered, null);
+                    Platform.runLater(() -> this.videoList.setRoot(root));
+                });
                 pause.playFromStart();
-
-                final TreeItem<Video> root = this.convertToTreeItems(filtered, null);
-                Platform.runLater(() -> this.videoList.setRoot(root));
             }
         });
+
 
         this.downloadBtn.disableProperty().bind(this.videoList.selectionModelProperty().isNull());
         this.downloadBtn.setOnAction(event -> downloadSelected());
     }
 
     private void downloadSelected() {
+        new Dialog<>().show();
         System.out.println("downloading");
     }
 
@@ -121,33 +131,8 @@ public class Controller {
             }
         };
         this.taskMessenger.registerWorker(task);
-        task.setOnFailed(event -> System.out.println(event.getSource().getException()));
-        new Thread(task).start();
-    }
-
-    private Predicate<Video> getPredicate() {
-        return video -> {
-            final Category category = this.getSelectedCategory();
-            if (category != null) {
-                category.getName();
-            }
-            final Faculty faculty = this.getSelectedFaculty();
-/*
-            if (faculty != null && !video.getTags().contains(faculty.getName())) {
-                return false;
-            }
-            final Section section = this.getSelectedSection();
-
-            if (section != null && !video.getTags().contains(section.getName())) {
-
-            }*/
-            final Semester semester = this.getSelectedSemester();
-
-            if (semester != null && !video.getSemester().equals(semester.getName())) {
-                return false;
-            }
-            return true;
-        };
+        task.setOnFailed(event -> event.getSource().getException().printStackTrace());
+        executor.execute(task);
     }
 
     private Faculty getSelectedFaculty() {
@@ -164,6 +149,37 @@ public class Controller {
 
     private Category getSelectedCategory() {
         return this.categoryList.getSelectionModel().getSelectedItem();
+    }
+
+    private Predicate<Video> getPredicate() {
+        return video -> {
+            final Category category = this.getSelectedCategory();
+            final Faculty faculty = this.getSelectedFaculty();
+            final Semester semester = this.getSelectedSemester();
+            final Section section = this.getSelectedSection();
+
+            if (category != null && !video.getTags().contains(category.getName())) {
+                return false;
+            }
+
+            if (faculty != null && !video.getTags().contains(faculty.getName())) {
+                boolean found = false;
+
+                for (Section facultySection : faculty.getSections()) {
+                    if (video.getTags().contains(facultySection.getName())) {
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    return false;
+                }
+            }
+            if (section != null && !video.getTags().contains(section.getName())) {
+                return false;
+            }
+            return semester == null || Objects.equals(semester.getName(), video.getSemester());
+        };
     }
 
     private TreeItem<Video> convertToTreeItems(Collection<Video> videos, TreeItem<Video> root) {

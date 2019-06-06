@@ -2,9 +2,9 @@ package main.background.storage;
 
 import main.model.QueryItem;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.function.BiFunction;
 
 /**
@@ -16,6 +16,7 @@ public abstract class QueryItemHelper<T extends QueryItem> {
 
     // todo implement this
     public QueryItemHelper(String key, BiFunction<Integer, String, T> createFunction) {
+        Objects.requireNonNull(key);
         this.key = key;
         this.createFunction = createFunction;
     }

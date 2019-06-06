@@ -13,7 +13,7 @@ public class Register {
     static {
         LOGGER = Logger.getGlobal();
         try {
-            LOGGER.addHandler(new FileHandler(System.getProperty("user.dir") + System.getProperty("file.separator") + "gorgon.log"));
+            LOGGER.addHandler(new FileHandler(System.getProperty("user.dir") + System.getProperty("file.separator") + "l2go.log"));
         } catch (IOException e) {
             e.printStackTrace();
         }
