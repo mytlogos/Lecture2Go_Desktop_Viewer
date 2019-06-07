@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Separator?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.ColumnConstraints?>
+<?import javafx.scene.layout.GridPane?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.RowConstraints?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Text?>
+<?import javafx.scene.text.TextFlow?>
+
+<GridPane maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1">
+    <columnConstraints>
+        <ColumnConstraints hgrow="ALWAYS" minWidth="10.0" percentWidth="80.0" />
+        <ColumnConstraints hgrow="ALWAYS" minWidth="10.0" percentWidth="20.0" />
+    </columnConstraints>
+    <rowConstraints>
+        <RowConstraints minHeight="10.0" percentHeight="60.0" vgrow="SOMETIMES" />
+        <RowConstraints minHeight="10.0" percentHeight="20.0" vgrow="SOMETIMES" />
+        <RowConstraints minHeight="10.0" percentHeight="20.0" vgrow="SOMETIMES" />
+    </rowConstraints>
+   <VBox>
+      <children>
+          <TextFlow fx:id="titleFlow" />
+         <Region VBox.vgrow="ALWAYS" />
+         <Text fx:id="duration" strokeType="OUTSIDE" strokeWidth="0.0" text="Text" />
+      </children>
+   </VBox>
+    <Text fx:id="date" layoutX="10.0" layoutY="33.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Text" GridPane.columnIndex="1" GridPane.valignment="TOP" />
+    <TextFlow fx:id="creatorFlow" GridPane.rowIndex="1" />
+    <Separator GridPane.columnSpan="2147483647" GridPane.rowIndex="2" />
+   <ImageView fx:id="downloadAble" fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true" GridPane.columnIndex="1" GridPane.rowIndex="1" />
+</GridPane>
