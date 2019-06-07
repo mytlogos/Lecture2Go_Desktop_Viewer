@@ -10,15 +10,13 @@ public class IndexInfo {
     private final int limit;
     private final LocalDateTime lastIndexed;
     private final int itemCount;
-    private final String titleHash;
 
 
-    public IndexInfo(int page, int limit, LocalDateTime lastIndexed, int itemCount, String titleHash) {
+    public IndexInfo(int page, int limit, LocalDateTime lastIndexed, int itemCount) {
         this.page = page;
         this.limit = limit;
         this.lastIndexed = lastIndexed;
         this.itemCount = itemCount;
-        this.titleHash = titleHash;
     }
 
     public int getPage() {
@@ -38,6 +36,6 @@ public class IndexInfo {
     }
 
     public String getTitleHash() {
-        return titleHash;
+        return "";
     }
 }

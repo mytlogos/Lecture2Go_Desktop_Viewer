@@ -52,12 +52,27 @@ public class Client {
         return this.requests.query(query).execute();
     }
 
-    public Response<ResponseBody> getVideoFeed(int videoId) throws IOException {
+    public Response<ResponseBody> query(Query query) throws IOException {
+        return this.query(
+                query.getFaculty(),
+                query.getSection(),
+                query.getSemester(),
+                query.getCategory(),
+                query.getPage(),
+                query.getLimit()
+        );
+    }
+
+    public Response<ResponseBody> getVideoXml(int videoId) throws IOException {
         return this.requests.getVideoFeed(videoId).execute();
     }
 
-    public Response<ResponseBody> getVideo(String videoResource) throws IOException {
-        return this.requests.getVideo(videoResource).execute();
+    public Response<ResponseBody> getVideoPage(int videoId) throws IOException {
+        return this.requests.getVideoPage(videoId).execute();
+    }
+
+    public Response<ResponseBody> getVideoStream(String videoResource) throws IOException {
+        return this.requests.getVideoStream(videoResource).execute();
     }
 
 }

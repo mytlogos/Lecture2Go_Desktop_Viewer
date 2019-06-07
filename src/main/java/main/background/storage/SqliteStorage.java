@@ -35,12 +35,12 @@ final class SqliteStorage extends Storage {
 
     private void init() {
 
-        this.tables.put("query_item", "key VARCHAR(255) NOT NULL, id INT NOT NULL, name VARCHAR(500) NOT NULL, PRIMARY KEY(id, key)");
-        this.tables.put("section", "parent_id INT NOT NULL, id INT NOT NULL, name VARCHAR(500) NOT NULL, PRIMARY KEY(id), FOREIGN KEY(parent_id) REFERENCES query_item(id)");
         this.imageTables.put("cover", "id INT NOT NULL, image BLOB NOT NULL, PRIMARY KEY(id)");
-        this.imageTables.put("index_info", "page INT NOT NULL, limit INT NOT NULL, last_indexed VARCHAR(255) NOT NULL, item_count INT NOT NULL, PRIMARY KEY(page)");
+        this.tables.put("query_item", "key VARCHAR(255) NOT NULL, id INT NOT NULL, name VARCHAR(500) NOT NULL, PRIMARY KEY(id, key)");
+        this.tables.put("section", "parent_id INT NOT NULL, id INT NOT NULL, name VARCHAR(500) NOT NULL, PRIMARY KEY(id)");
+        this.tables.put("index_info", "page INT NOT NULL, max_limit INT NOT NULL, last_indexed VARCHAR(255) NOT NULL, item_count INT NOT NULL, PRIMARY KEY(page)");
         // todo make an additional column for updates date, so that videos that never 'changed' or were never 'inserted' anymore are checked and then maybe deleted
-        this.tables.put("video", "cover VARCHAR(255) NOT NULL, id INT NOT NULL, name VARCHAR(700) NOT NULL, semester VARCHAR(500), published VARCHAR(500), PRIMARY KEY(id)");
+        this.tables.put("video", "cover VARCHAR(255) NOT NULL, id INT NOT NULL, name VARCHAR(700) NOT NULL, semester VARCHAR(500), published VARCHAR(500), length INT, download_url VARCHAR(700), size INT, PRIMARY KEY(id)");
         this.tables.put("dozent", "id INT NOT NULL, name VARCHAR(700) NOT NULL, PRIMARY KEY(id, name), FOREIGN KEY (id) REFERENCES video(id)");
         this.tables.put("tags", "id INT NOT NULL, tag VARCHAR(700) NOT NULL, PRIMARY KEY(id, tag), FOREIGN KEY (id) REFERENCES video(id)");
         this.tables.put("video_video", "parent_id INT NOT NULL, sub_id INT NOT NULL, PRIMARY KEY(parent_id, sub_id), FOREIGN KEY (parent_id) REFERENCES video(id),FOREIGN KEY (sub_id) REFERENCES video(id)");
@@ -119,6 +119,9 @@ final class SqliteStorage extends Storage {
                         final String name = query.getString(3);
                         final String semester = query.getString(4);
                         final String published = query.getString(5);
+                        final long length = query.getLong(6);
+                        final String downloadUrl = query.getString(7);
+                        final long size = query.getLong(8);
 
                         final Video video;
 
@@ -130,6 +133,9 @@ final class SqliteStorage extends Storage {
                         } else {
                             throw new IllegalStateException("video has neither semester nor published date!");
                         }
+                        video.setDuration(length);
+                        video.setDownloadUrl(downloadUrl);
+                        video.setSize(size);
                         videos.add(video);
                         idMappings.put(video.getId(), video);
                     }
@@ -198,7 +204,7 @@ final class SqliteStorage extends Storage {
             return;
         }
         this.conManager.getConAuto(connection -> {
-            try (PreparedStatement statement = connection.prepareStatement("INSERT OR IGNORE INTO video VALUES (?,?,?,?,?)")) {
+            try (PreparedStatement statement = connection.prepareStatement("INSERT OR IGNORE INTO video VALUES (?,?,?,?,?,?,?,?)")) {
                 for (Video video : videos) {
                     addVideoBatch(statement, video);
 
@@ -247,6 +253,9 @@ final class SqliteStorage extends Storage {
         statement.setString(3, child.getName());
         statement.setString(4, child.getSemester());
         statement.setString(5, Util.formatLocalDate(child.getPublished()));
+        statement.setLong(6, child.getDuration());
+        statement.setString(7, child.getDownloadUrl());
+        statement.setLong(8, child.getSize());
         statement.addBatch();
     }
 
@@ -256,17 +265,16 @@ final class SqliteStorage extends Storage {
             return;
         }
         this.conManager.getConAuto(connection -> {
-           /* try (PreparedStatement statement = connection.prepareStatement("UPDATE video SET cover=?, name=?, semester=?, published=? WHERE id=?")) {
+            try (PreparedStatement statement = connection.prepareStatement("UPDATE video SET cover=?, name=?, semester=?, published=?, length=?, download_url=?, size=? WHERE id=?")) {
                 for (Video video : videos) {
-                    statement.setString(1, video.getCover());
-                    statement.setString(2, video.getName());
-                    statement.setString(3, video.getSemester());
-                    statement.setString(4, Util.formatLocalDate(video.getPublished()));
-                    statement.setInt(5, video.getId());
-                    statement.addBatch();
+                    videoUpdateBatch(statement, video);
+
+                    for (Video child : video.getChildren()) {
+                        videoUpdateBatch(statement, child);
+                    }
                 }
                 statement.executeBatch();
-            }*/
+            }
 
             try (PreparedStatement statement = connection.prepareStatement("INSERT OR IGNORE INTO video_video VALUES(?,?)")) {
                 for (Video video : videos) {
@@ -299,6 +307,18 @@ final class SqliteStorage extends Storage {
                 statement.executeBatch();
             }
         });
+    }
+
+    private void videoUpdateBatch(PreparedStatement statement, Video video) throws SQLException {
+        statement.setString(1, video.getCover());
+        statement.setString(2, video.getName());
+        statement.setString(3, video.getSemester());
+        statement.setString(4, Util.formatLocalDate(video.getPublished()));
+        statement.setLong(5, video.getDuration());
+        statement.setString(6, video.getDownloadUrl());
+        statement.setLong(7, video.getSize());
+        statement.setInt(8, video.getId());
+        statement.addBatch();
     }
 
     @Override
@@ -334,7 +354,7 @@ final class SqliteStorage extends Storage {
                         final String lastIndexedString = query.getString(3);
                         final int itemCount = query.getInt(4);
 
-                        indexInfos.add(new IndexInfo(page, limit, Util.parseLocalDateTime(lastIndexedString), itemCount, ""));
+                        indexInfos.add(new IndexInfo(page, limit, Util.parseLocalDateTime(lastIndexedString), itemCount));
                     }
                 }
             }
@@ -361,7 +381,7 @@ final class SqliteStorage extends Storage {
     @Override
     public void updateIndexInfos(List<IndexInfo> infos) {
         this.conManager.getConAuto(connection -> {
-            try (PreparedStatement statement = connection.prepareStatement("UPDATE index_info SET limit=?, last_indexed=?, item_count=? WHERE page=?;")) {
+            try (PreparedStatement statement = connection.prepareStatement("UPDATE index_info SET max_limit=?, last_indexed=?, item_count=? WHERE page=?;")) {
                 for (IndexInfo info : infos) {
                     statement.setInt(1, info.getLimit());
                     statement.setString(2, Util.formatLocalDateTime(info.getLastIndexed()));
@@ -573,6 +593,14 @@ final class SqliteStorage extends Storage {
         }
 
         private void delete(Faculty item, Connection connection) throws SQLException {
+            try (PreparedStatement statement = connection.prepareStatement("DELETE FROM section WHERE parent_id=? OR id=?")) {
+                for (Section section : item.getSections()) {
+                    statement.setInt(1, item.getId());
+                    statement.setInt(2, section.getId());
+                    statement.addBatch();
+                }
+                statement.executeBatch();
+            }
             try (PreparedStatement statement = connection.prepareStatement("DELETE FROM query_item WHERE id=? AND key=?")) {
                 statement.setInt(1, item.getId());
                 statement.setString(2, this.key);
@@ -587,8 +615,15 @@ final class SqliteStorage extends Storage {
                 statement.setString(3, item.getName());
                 statement.execute();
             }
+            try (PreparedStatement statement = connection.prepareStatement("INSERT OR IGNORE INTO section VALUES (?,?,?)")) {
+                for (Section section : item.getSections()) {
+                    statement.setInt(1, item.getId());
+                    statement.setInt(2, section.getId());
+                    statement.setString(3, section.getName());
+                    statement.addBatch();
+                }
+                statement.executeBatch();
+            }
         }
-
     }
-
 }

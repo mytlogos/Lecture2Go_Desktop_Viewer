@@ -29,25 +29,33 @@ class TaskMessenger {
             final InvalidationListener listener = observable -> this.processMessage(worker);
 
             this.doubleProperty.setValue(worker.getProgress());
-            worker.progressProperty().addListener(new ChangeListener<Number>() {
-                @Override
-                public void changed(ObservableValue<? extends Number> observable, Number oldValue, Number newValue) {
-                    TaskMessenger.this.doubleProperty.setValue(newValue);
-                    TaskMessenger.this.processMessage(worker);
-                    TaskMessenger.this.workers.remove(worker);
-
-                    worker.progressProperty().removeListener(this);
-                    worker.totalWorkProperty().removeListener(listener);
-                    worker.workDoneProperty().removeListener(listener);
-                    worker.titleProperty().removeListener(listener);
-                    worker.messageProperty().removeListener(listener);
-                }
-            });
+            final ChangeListener<Number> changeListener = (observable, oldValue, newValue) -> {
+                TaskMessenger.this.doubleProperty.setValue(newValue);
+                this.processMessage(worker);
+            };
 
             worker.totalWorkProperty().addListener(listener);
             worker.workDoneProperty().addListener(listener);
             worker.titleProperty().addListener(listener);
             worker.messageProperty().addListener(listener);
+
+            worker.progressProperty().addListener(changeListener);
+            worker.stateProperty().addListener(new ChangeListener<Worker.State>() {
+                @Override
+                public void changed(ObservableValue<? extends Worker.State> observable, Worker.State oldValue, Worker.State newValue) {
+                    if (!worker.isRunning() && !Worker.State.SCHEDULED.equals(newValue)) {
+                        TaskMessenger.this.processMessage(worker);
+                        TaskMessenger.this.workers.remove(worker);
+
+                        worker.stateProperty().removeListener(this);
+                        worker.progressProperty().removeListener(changeListener);
+                        worker.totalWorkProperty().removeListener(listener);
+                        worker.workDoneProperty().removeListener(listener);
+                        worker.titleProperty().removeListener(listener);
+                        worker.messageProperty().removeListener(listener);
+                    }
+                }
+            });
         }
     }
 

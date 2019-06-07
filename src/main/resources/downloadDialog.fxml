@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.*?>
+<DialogPane fx:id="root" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
+            xmlns="http://javafx.com/javafx/8.0.121" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="main.gui.DownloadDialog">
+    <content>
+        <VBox maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" spacing="5.0">
+            <Text layoutX="20.0" layoutY="33.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Herunterzuladen:"/>
+            <Text fx:id="videoName" strokeType="OUTSIDE" strokeWidth="0.0"/>
+            <HBox>
+                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Speichern unter:"/>
+                <Text fx:id="fileLocation" layoutX="10.0" layoutY="23.0" strokeType="OUTSIDE" strokeWidth="0.0"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Button mnemonicParsing="false" onAction="#openFileChooser" text="Durchsuchen"/>
+            </HBox>
+            <Text layoutX="20.0" layoutY="33.0" strokeType="OUTSIDE" strokeWidth="0.0" text="Videos:"/>
+            <TableView fx:id="videoList" VBox.vgrow="ALWAYS">
+                <columnResizePolicy>
+                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                </columnResizePolicy>
+            </TableView>
+            <HBox>
+                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Freier Speicher"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Text fx:id="freeSpace" strokeType="OUTSIDE" strokeWidth="0.0"/>
+            </HBox>
+            <HBox layoutX="20.0" layoutY="519.0">
+                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Benötigter Speicher"/>
+                <Region HBox.hgrow="ALWAYS"/>
+                <Text fx:id="neededSpace" layoutX="10.0" layoutY="23.0" strokeType="OUTSIDE" strokeWidth="0.0"/>
+            </HBox>
+            <Text fx:id="errorField" strokeType="OUTSIDE" strokeWidth="0.0"/>
+            <CheckBox mnemonicParsing="false" fx:id="dontShowDownloadDialog" text="Kein Download Dialog öffnen"/>
+        </VBox>
+    </content>
+    <ButtonType fx:constant="CANCEL"/>
+    <ButtonType fx:constant="YES"/>
+</DialogPane>

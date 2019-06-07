@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Text?>
+<?import javafx.scene.text.TextFlow?>
+
+<HBox prefHeight="130.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1">
+   <VBox spacing="10.0">
+      <children>
+          <ImageView fx:id="image" fitHeight="100.0" fitWidth="150.0" pickOnBounds="true" preserveRatio="true" />
+         <Text fx:id="duration" strokeType="OUTSIDE" strokeWidth="0.0">
+            <VBox.margin>
+               <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+            </VBox.margin>
+         </Text>
+      </children>
+   </VBox>
+    <VBox HBox.hgrow="ALWAYS">
+        <HBox.margin>
+            <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+        </HBox.margin>
+        <TextFlow fx:id="titleFlow" />
+        <Region layoutX="10.0" layoutY="58.0" VBox.vgrow="ALWAYS" />
+        <TextFlow fx:id="creatorFlow" layoutX="10.0" layoutY="10.0" />
+        <Region VBox.vgrow="ALWAYS" />
+        <Text fx:id="tags" strokeType="OUTSIDE" strokeWidth="0.0" />
+    </VBox>
+   <VBox>
+      <HBox.margin>
+         <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
+      </HBox.margin>
+      <children>
+          <Text fx:id="date" strokeType="OUTSIDE" strokeWidth="0.0" />
+         <Region VBox.vgrow="ALWAYS" />
+         <ImageView fx:id="downloadAble" fitHeight="20.0" fitWidth="20.0" pickOnBounds="true" preserveRatio="true" />
+      </children>
+   </VBox>
+</HBox>

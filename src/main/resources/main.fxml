@@ -1,94 +1,88 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.geometry.Insets?>
-<?import javafx.scene.control.Button?>
-<?import javafx.scene.control.ListView?>
-<?import javafx.scene.control.Menu?>
-<?import javafx.scene.control.MenuBar?>
-<?import javafx.scene.control.MenuItem?>
-<?import javafx.scene.control.ProgressBar?>
-<?import javafx.scene.control.TextField?>
-<?import javafx.scene.control.TitledPane?>
-<?import javafx.scene.control.ToolBar?>
-<?import javafx.scene.control.TreeView?>
-<?import javafx.scene.layout.HBox?>
-<?import javafx.scene.layout.VBox?>
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
 <?import javafx.scene.text.Text?>
-
-<VBox prefHeight="600.0" prefWidth="800.0" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="main.gui.Controller">
-    <children>
-        <MenuBar>
-            <menus>
-                <Menu mnemonicParsing="false" text="File">
-                    <items>
-                        <MenuItem mnemonicParsing="false" text="Close" />
-                    </items>
-                </Menu>
-                <Menu mnemonicParsing="false" text="Edit">
-                    <items>
-                        <MenuItem mnemonicParsing="false" text="Delete" />
-                    </items>
-                </Menu>
-                <Menu mnemonicParsing="false" text="Help">
-                    <items>
-                        <MenuItem mnemonicParsing="false" text="About" />
-                    </items>
-                </Menu>
-            </menus>
-        </MenuBar>
-        <ToolBar prefHeight="40.0" prefWidth="200.0">
-            <items>
-                <TextField />
-                <Button mnemonicParsing="false" text="Suchen" />
-            <Button fx:id="downloadBtn" mnemonicParsing="false" text="Download" />
-            </items>
-        </ToolBar>
-        <HBox prefHeight="100.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
-            <children>
-                <VBox spacing="5.0">
-                    <children>
-                        <TitledPane animated="false" text="Fakultät/Einrichtung" VBox.vgrow="ALWAYS">
-                            <content>
-                                <ListView fx:id="facultyList" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" />
-                            </content>
-                        </TitledPane>
-                        <TitledPane animated="false" layoutX="10.0" layoutY="10.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" text="Bereich" VBox.vgrow="ALWAYS">
-                            <content>
-                                <ListView fx:id="sectionList" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" />
-                            </content>
-                        </TitledPane>
-                        <TitledPane animated="false" layoutX="10.0" layoutY="60.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" text="Semester" VBox.vgrow="ALWAYS">
-                            <content>
-                                <ListView fx:id="semesterList" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" />
-                            </content>
-                        </TitledPane>
-                        <TitledPane animated="false" layoutX="10.0" layoutY="76.0" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" text="Kategorie" VBox.vgrow="ALWAYS">
-                            <content>
-                                <ListView fx:id="categoryList" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" />
-                            </content>
-                        </TitledPane>
-                    </children>
-                    <padding>
-                        <Insets bottom="5.0" left="5.0" right="5.0" top="5.0" />
-                    </padding>
-                </VBox>
-                <TreeView fx:id="videoList" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" HBox.hgrow="ALWAYS">
-               <HBox.margin>
-                  <Insets bottom="5.0" right="5.0" top="5.0" />
-               </HBox.margin></TreeView>
-            </children>
+<VBox prefHeight="600.0" prefWidth="1000.0" xmlns="http://javafx.com/javafx/8.0.121" xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="main.gui.Controller">
+    <MenuBar>
+        <Menu mnemonicParsing="false" text="File">
+            <MenuItem mnemonicParsing="false" text="Close"/>
+        </Menu>
+        <Menu mnemonicParsing="false" text="Edit">
+            <MenuItem mnemonicParsing="false" text="Delete"/>
+        </Menu>
+        <Menu mnemonicParsing="false" text="Help">
+            <MenuItem mnemonicParsing="false" text="About"/>
+        </Menu>
+    </MenuBar>
+    <HBox alignment="CENTER_LEFT" spacing="5.0">
+        <padding>
+            <Insets left="5.0" right="5.0" top="5.0"/>
+        </padding>
+        <TextField fx:id="titleSearch" promptText="Titel"/>
+        <TextField fx:id="dozentSearch" promptText="Dozenten"/>
+        <Button mnemonicParsing="false" onAction="#runSelectedQuery" text="Suchen"/>
+        <CheckBox fx:id="searchSubVideosCheck" mnemonicParsing="false" text="Search SubVideos"/>
+        <Button fx:id="downloadBtn" mnemonicParsing="false" text="Download"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <HBox>
+            <padding>
+                <Insets left="10.0"/>
+            </padding>
+            <ToggleButton mnemonicParsing="false" onAction="#switchToTile" selected="true"
+                          style="-fx-border-radius: 5 0 0 5; -fx-background-radius: 5 0 0 5;"
+                          text="TiegelForm">
+                <toggleGroup>
+                    <ToggleGroup fx:id="view"/>
+                </toggleGroup>
+            </ToggleButton>
+            <ToggleButton mnemonicParsing="false" onAction="#switchToLine"
+                          style="-fx-background-radius: 0 5 5 0; -fx-border-radius: 0 5 5 0;"
+                          text="Zeilenform" toggleGroup="$view"/>
         </HBox>
-      <HBox alignment="CENTER_RIGHT" maxWidth="1.7976931348623157E308" prefHeight="30.0" spacing="5.0">
-         <children>
-            <Text fx:id="taskMessage" strokeType="OUTSIDE" strokeWidth="0.0" text="Text" />
-            <ProgressBar fx:id="progressBar" prefWidth="200.0" progress="0.0" />
-         </children>
-         <padding>
-            <Insets right="5.0" />
-         </padding>
-         <VBox.margin>
-            <Insets bottom="5.0" />
-         </VBox.margin>
-      </HBox>
-    </children>
+    </HBox>
+    <HBox prefHeight="100.0" prefWidth="200.0" VBox.vgrow="ALWAYS">
+        <VBox spacing="5.0">
+            <padding>
+                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+            </padding>
+            <TitledPane animated="false" text="Fakultät/Einrichtung" VBox.vgrow="ALWAYS">
+                <ListView fx:id="facultyList" maxHeight="1.7976931348623157E308"
+                          maxWidth="1.7976931348623157E308"/>
+            </TitledPane>
+            <TitledPane animated="false" layoutX="10.0" layoutY="10.0" maxHeight="1.7976931348623157E308"
+                        maxWidth="1.7976931348623157E308" text="Bereich" VBox.vgrow="ALWAYS">
+                <ListView fx:id="sectionList" maxHeight="1.7976931348623157E308"
+                          maxWidth="1.7976931348623157E308"/>
+            </TitledPane>
+            <TitledPane animated="false" layoutX="10.0" layoutY="60.0" maxHeight="1.7976931348623157E308"
+                        maxWidth="1.7976931348623157E308" text="Semester" VBox.vgrow="ALWAYS">
+                <ListView fx:id="semesterList" maxHeight="1.7976931348623157E308"
+                          maxWidth="1.7976931348623157E308"/>
+            </TitledPane>
+            <TitledPane animated="false" layoutX="10.0" layoutY="76.0" maxHeight="1.7976931348623157E308"
+                        maxWidth="1.7976931348623157E308" text="Kategorie" VBox.vgrow="ALWAYS">
+                <ListView fx:id="categoryList" maxHeight="1.7976931348623157E308"
+                          maxWidth="1.7976931348623157E308"/>
+            </TitledPane>
+        </VBox>
+        <TreeView fx:id="videoList" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308"
+                  HBox.hgrow="ALWAYS">
+            <HBox.margin>
+                <Insets bottom="5.0" right="5.0" top="5.0"/>
+            </HBox.margin>
+        </TreeView>
+    </HBox>
+    <HBox alignment="CENTER_RIGHT" maxWidth="1.7976931348623157E308" prefHeight="30.0" spacing="5.0">
+        <padding>
+            <Insets right="5.0"/>
+        </padding>
+        <VBox.margin>
+            <Insets bottom="5.0"/>
+        </VBox.margin>
+        <Text fx:id="taskMessage" strokeType="OUTSIDE" strokeWidth="0.0" text="Text"/>
+        <ProgressBar fx:id="progressBar" prefWidth="200.0" progress="0.0"/>
+    </HBox>
 </VBox>

@@ -20,9 +20,13 @@ interface Requests {
     Call<ResponseBody> query(@QueryMap Map<String, String> query);
 
     @GET("rss/{videoId}.mp4.xml")
-    Call<ResponseBody> getVideoFeed(int videoId);
+    Call<ResponseBody> getVideoFeed(@Path("videoId") int videoId);
+
+    @GET("l2go/-/get/l/{videoId}")
+    Call<ResponseBody> getVideoPage(@Path("videoId") int videoId);
 
     @Streaming
-    @GET("abo/{video}")
-    Call<ResponseBody> getVideo(@Path("video") String video);
+    @GET("https://l2gdownload.rrz.uni-hamburg.de/abo/{video}")
+    Call<ResponseBody> getVideoStream(@Path("video") String video);
+
 }

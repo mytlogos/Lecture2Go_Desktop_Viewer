@@ -3,6 +3,7 @@ package main.model;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -19,6 +20,12 @@ public class Faculty extends AbstractQueryItem {
 
     public List<Section> getSections() {
         return FXCollections.unmodifiableObservableList(this.sections);
+    }
+
+    public void addSection(Collection<Section> items) {
+        for (Section item : items) {
+            this.addSection(item);
+        }
     }
 
     public void addSection(Section section) {

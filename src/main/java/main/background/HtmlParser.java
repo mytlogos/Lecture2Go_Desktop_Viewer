@@ -23,12 +23,11 @@ import java.util.regex.Pattern;
  */
 public class HtmlParser {
 
-    public PageInfo parse(Response<ResponseBody> response) throws IOException {
-        return parse(response.raw().request().url().toString(), Objects.requireNonNull(response.body()).string());
+    public PageInfo parseList(Response<ResponseBody> response) throws IOException {
+        return parseList(this.parseResponse(response));
     }
 
-    public PageInfo parse(String url, String html) {
-        final Document document = Jsoup.parse(html, url);
+    private PageInfo parseList(Document document) {
         final Elements accordions = document.select(".accordion-group");
 
         if (accordions.size() > 4 || accordions.size() < 3) {
@@ -54,6 +53,10 @@ public class HtmlParser {
         return new PageInfo(faculties, sections, semesters, categories, videos);
     }
 
+    private Document parseResponse(Response<ResponseBody> response) throws IOException {
+        return Jsoup.parse(Objects.requireNonNull(response.body()).string(), response.raw().request().url().toString());
+    }
+
     private <T> List<T> processAccordion(Element element, BiFunction<Integer, String, T> generator, int linkPosition) {
         final Elements contents = element.select(".toggler-content li a");
         final Pattern pattern = Pattern.compile("https://lecture2go\\.uni-hamburg\\.de/l2go/-/get/(\\d+)/(\\d+)/(\\d+)/(\\d+)/(\\d+)");
@@ -69,6 +72,11 @@ public class HtmlParser {
             }
             String name = content.text();
             int id = Integer.parseInt(matcher.group(linkPosition));
+
+            if (id == 0) {
+                continue;
+            }
+
             list.add(generator.apply(id, name));
         }
         return list;
@@ -155,5 +163,11 @@ public class HtmlParser {
             videos.add(new Video(coverLink, id, title, creators, Util.parseLocalDate(date), Collections.emptyList()));
         }
         return videos;
+    }
+
+    public VideoMeta parseVideoPage(Response<ResponseBody> response, Video video) throws IOException {
+        final Document document = this.parseResponse(response);
+        final Element element = document.selectFirst("#downloads > .download:first-child > a");
+        return element == null ? null : new VideoMeta(-1, element.attr("abs:href"), 0, video.getId());
     }
 }

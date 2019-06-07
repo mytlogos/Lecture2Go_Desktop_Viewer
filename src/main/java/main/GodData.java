@@ -1,6 +1,8 @@
 package main;
 
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import main.background.storage.Storage;
 import main.model.*;
@@ -9,6 +11,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 /**
  *
@@ -20,6 +24,7 @@ public class GodData {
     private final ObservableList<Semester> semesters = FXCollections.observableArrayList();
     private final ObservableList<Category> categories = FXCollections.observableArrayList();
     private final ObservableList<Video> videos = FXCollections.observableArrayList();
+    private Executor executor = Executors.newFixedThreadPool(5);
 
     public static GodData get() {
         return DATA;
@@ -45,6 +50,10 @@ public class GodData {
         return FXCollections.unmodifiableObservableList(videos);
     }
 
+    public void addListener(ListChangeListener<Video> videoListChangeListener) {
+        this.videos.addListener(videoListChangeListener);
+    }
+
     public void addSection(Collection<Section> items) {
         items.forEach(this::addSection);
     }
@@ -65,12 +74,27 @@ public class GodData {
     }
 
     public void addFaculty(Collection<Faculty> items) {
-        items.removeIf(item -> !this.addFaculty(item));
-        Storage.getDatabase().getFacultyHelper().add(items);
+        items.forEach(this::addFaculty);
+        final Runnable runnable = () -> Storage.getDatabase().getFacultyHelper().add(items);
+
+        if (Platform.isFxApplicationThread()) {
+            this.executor.execute(runnable);
+        } else {
+            runnable.run();
+        }
     }
 
     public boolean addFaculty(Faculty faculty) {
-        return add(faculties, faculty);
+        Objects.requireNonNull(faculty);
+
+        for (Faculty currentFaculty : this.faculties) {
+            if (currentFaculty.equals(faculty)) {
+                currentFaculty.addSection(faculty.getSections());
+                return false;
+            }
+        }
+        this.faculties.add(faculty);
+        return true;
     }
 
     public void removeFaculty(Collection<Faculty> items) {
@@ -97,7 +121,13 @@ public class GodData {
 
     public void addCategory(Collection<Category> items) {
         items.removeIf(item -> !this.addCategory(item));
-        Storage.getDatabase().getCategoryHelper().add(items);
+        final Runnable runnable = () -> Storage.getDatabase().getCategoryHelper().add(items);
+
+        if (Platform.isFxApplicationThread()) {
+            this.executor.execute(runnable);
+        } else {
+            runnable.run();
+        }
     }
 
     public boolean addCategory(Category category) {
@@ -116,7 +146,13 @@ public class GodData {
 
     public void addSemester(Collection<Semester> items) {
         items.removeIf(item -> !this.addSemester(item));
-        Storage.getDatabase().getSemesterHelper().add(items);
+        final Runnable runnable = () -> Storage.getDatabase().getSemesterHelper().add(items);
+
+        if (Platform.isFxApplicationThread()) {
+            this.executor.execute(runnable);
+        } else {
+            runnable.run();
+        }
     }
 
     public boolean addSemester(Semester semester) {
@@ -138,17 +174,30 @@ public class GodData {
         List<Video> oldVideos = new ArrayList<>();
 
         for (Video item : items) {
-            if (this.addVideo(item)) {
-                newVideos.add(item);
-            } else {
+            if (this.mergeVideo(item)) {
                 oldVideos.add(item);
+            } else {
+                newVideos.add(item);
             }
         }
-        Storage.getDatabase().addVideos(newVideos);
-        Storage.getDatabase().updateVideos(oldVideos);
+        final Runnable runnable = () -> {
+            videos.addAll(newVideos);
+            Storage.getDatabase().addVideos(newVideos);
+            Storage.getDatabase().updateVideos(oldVideos);
+        };
+        if (Platform.isFxApplicationThread()) {
+            this.executor.execute(runnable);
+        } else {
+            runnable.run();
+        }
+
     }
 
-    public boolean addVideo(Video video) {
+    /**
+     * @param video video to merge with current videos
+     * @return true if a equal video was found
+     */
+    private boolean mergeVideo(Video video) {
         Objects.requireNonNull(video);
 
         for (Video previousVideo : videos) {
@@ -158,11 +207,20 @@ public class GodData {
                         previousVideo.addChild(child);
                     }
                 }
-                return false;
+                return true;
             }
         }
-        this.videos.add(video);
-        return true;
+        return false;
+    }
+
+    public boolean addVideo(Video video) {
+        Objects.requireNonNull(video);
+
+        if (!mergeVideo(video)) {
+            this.videos.add(video);
+            return true;
+        }
+        return false;
     }
 
     public void removeVideo(Collection<Video> items) {

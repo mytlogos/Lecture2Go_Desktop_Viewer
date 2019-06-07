@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.ButtonType?>
+<?import javafx.scene.control.DialogPane?>
+<?import javafx.scene.control.TableView?>
+<?import javafx.scene.control.TextArea?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.VBox?>
+<?import javafx.scene.text.Text?>
+
+<DialogPane fx:id="root" maxHeight="1.7976931348623157E308" maxWidth="1.7976931348623157E308" xmlns="http://javafx.com/javafx/8.0.141" xmlns:fx="http://javafx.com/fxml/1" fx:controller="main.gui.DownloadViewDialog">
+    <content>
+        <VBox spacing="5.0">
+            <HBox>
+                <Text strokeType="OUTSIDE" strokeWidth="0.0" text="Gespeichert unter:" />
+                <Text fx:id="fileLocation" layoutX="10.0" layoutY="23.0" strokeType="OUTSIDE" strokeWidth="0.0" />
+                <Region HBox.hgrow="ALWAYS" />
+            </HBox>
+            <TableView fx:id="videoList" VBox.vgrow="ALWAYS">
+                <columnResizePolicy>
+                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY" />
+                </columnResizePolicy>
+            </TableView>
+         <TextArea fx:id="errorField" disable="true" visible="false" VBox.vgrow="ALWAYS" />
+        </VBox>
+    </content>
+    <ButtonType fx:constant="CANCEL" />
+    <ButtonType fx:constant="CLOSE" />
+</DialogPane>

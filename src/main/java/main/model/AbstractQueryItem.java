@@ -1,5 +1,7 @@
 package main.model;
 
+import java.util.Objects;
+
 /**
  *
  */
@@ -8,19 +10,20 @@ public class AbstractQueryItem implements QueryItem {
     private int id;
     private String name;
 
-    public AbstractQueryItem(int id, String name) {
+    AbstractQueryItem(int id, String name) {
+        Objects.requireNonNull(name);
+        if (id <= 0) {
+            throw new IllegalArgumentException("id is not valid: smaller/equal to 0");
+        }
         this.id = id;
         this.name = name;
     }
 
     @Override
-    public int getId() {
-        return this.id;
-    }
-
-    @Override
-    public String getName() {
-        return this.name;
+    public int hashCode() {
+        int result = getId();
+        result = 31 * result + getName().hashCode();
+        return result;
     }
 
     @Override
@@ -35,9 +38,12 @@ public class AbstractQueryItem implements QueryItem {
     }
 
     @Override
-    public int hashCode() {
-        int result = getId();
-        result = 31 * result + getName().hashCode();
-        return result;
+    public int getId() {
+        return this.id;
+    }
+
+    @Override
+    public String getName() {
+        return this.name;
     }
 }
